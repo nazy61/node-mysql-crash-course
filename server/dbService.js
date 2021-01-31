@@ -1,17 +1,109 @@
-const mysql = require('mysql2');
+const mysql = require('mysql');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const pool = mysql.createPool({
-    connectionLimit : 1000,
-    connectTimeout  : 60 * 60 * 1000,
-    acquireTimeout  : 60 * 60 * 1000,
-    timeout         : 60 * 60 * 1000,
+let instance = null;
+
+const connection = mysql.createConnection({
     host            : process.env.HOST,
-    user            : process.env.USER,
+    user            : process.env.USERNAME,
     database        : process.env.DATABASE,
     password        : process.env.PASSWORD,
     port            : process.env.DB_PORT,
   });
 
-module.exports = pool;
+connection.connect((err) => {
+  if(err) {
+    console.log(err.message);
+  }
+  console.log('db ', connection.state);
+});
+
+class DbService {
+  static getDbServiceInstance() {
+    return instance ? instance : new DbService();
+  }
+
+  async getAllData() {
+    try{
+      const response = await new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM names';
+
+        connection.query(query, (err, results) => {
+          if(err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+
+      // console.log(response);
+      return response;
+    } catch(error) {
+      console.log(error);
+    }
+  }
+
+  async insertNewName(name) {
+    try {
+      const date_added = new Date();
+      const insertId = await new Promise((resolve, reject) => {
+        const query = 'INSERT INTO names (name, date_added) VALUES (?,?)';
+
+        connection.query(query, [name, date_added], (err, result) => {
+          if(err) reject(new Error(err.message));
+          resolve(result.insertId);
+        });
+      });
+
+      console.log(insertId);
+      return {
+        id: insertId,
+        name: name,
+        dateAdded: date_added,
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async updateNameRowByID(id, name) {
+    id = parseInt(id, 10);
+
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = 'UPDATE names SET name = ? WHERE id = ?';
+
+        connection.query(query, [name, id], (err, result) => {
+          if(err) reject(new Error(err.message));
+          resolve(result.affectedRows);
+        });
+      });
+
+      return response === 1 ? true : false;
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  async deleteRowByID(id) {
+    id = parseInt(id, 10);
+
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = 'DELETE FROM names WHERE id = ?';
+
+        connection.query(query, [id], (err, result) => {
+          if(err) reject(new Error(err.message));
+          resolve(result.affectedRows);
+        });
+      });
+
+      return response === 1 ? true : false;
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+}
+
+module.exports = DbService;
