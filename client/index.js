@@ -70,6 +70,17 @@ addBtn.onclick = function () {
     .then(data => insertRowIntoTable(data['data']));
 }
 
+const searchBtn = document.querySelector('#search-btn');
+searchBtn.onclick = function () {
+    const searchInput = document.querySelector('#search-input');
+    const name = searchInput.value;
+    searchInput.value = '';
+
+    fetch('http://localhost:5000/search/' + name)
+    .then(response => response.json())
+    .then(data => loadHTMLTable(data['data']));
+}
+
 function insertRowIntoTable(data) {
     const table = document.querySelector('table tbody');
     const isTableData = table.querySelector('.no-data');

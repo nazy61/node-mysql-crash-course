@@ -34,6 +34,16 @@ app.get('/getAll', (req, res) => {
         .catch((err) => console.log(err));
 });
 
+app.get('/search/:name', (req, res) => {
+    const { name } = req.params;
+    const db = dbService.getDbServiceInstance();
+
+    const result = db.searchByName(name);
+    result
+        .then(data => res.json({ data }))
+        .catch((err) => console.log(err));
+});
+
 // update
 app.patch('/update', (req, res) => {
     const { id, name } = req.body;
